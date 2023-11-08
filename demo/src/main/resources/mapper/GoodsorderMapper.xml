@@ -1,0 +1,49 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.example.demo.mapper.GoodsorderMapper">
+
+    <!-- 通用查询映射结果 -->
+    <resultMap id="BaseResultMap" type="com.example.demo.entity.Goodsorder">
+        <id column="orderId" property="orderid" />
+        <result column="tradeName" property="tradename" />
+        <result column="price" property="price" />
+        <result column="paymentStatus" property="paymentstatus" />
+        <result column="time" property="time" />
+    </resultMap>
+
+    <!-- 通用查询结果列 -->
+    <sql id="Base_Column_List">
+        orderId, tradeName, price, paymentStatus, time
+    </sql>
+    <update id="createTmpTable" parameterType="java.lang.String">
+        CREATE TEMPORARY TABLE temporaryTable (tradename varchar(255), total int)
+        select sum(price)as total,tradeName from goodsorder where time BETWEEN CONCAT(CURDATE(),' 00:00:00') AND CONCAT(CURDATE(),' 23:59:59') group by  tradename order by sum(price) DESC limit 8;
+    </update>
+    <update id="dropTmpTable" parameterType="java.lang.String">
+        DROP TEMPORARY TABLE temporaryTable;
+    </update>
+    <select id="selectMainMouthShow" resultType="com.example.demo.entity.vo.ShowMain">
+        select sum(price)as mouthPrice,tradeName from goodsorder where tradename in (select tradename from temporaryTable) group by  tradename;
+    </select>
+    <select id="selectMainTodayShow" resultType="com.example.demo.entity.vo.ShowMain">
+        select  sum(price)as todayPrice,tradeName from goodsorder where time BETWEEN CONCAT(CURDATE(),' 00:00:00') AND CONCAT(CURDATE(),' 23:59:59') group by  tradename order by sum(price) DESC limit 8;
+    </select>
+    <select id="selectNum" resultType="Integer">
+        select  count(*) from goodsorder where paymentStatus=1 AND (time BETWEEN CONCAT(CURDATE(),' 00:00:00') AND CONCAT(CURDATE(),' 23:59:59')) ;
+    </select>
+    <select id="selectMouthNum" resultType="Integer">
+        select  count(*) from goodsorder where paymentStatus=1 AND (DATE_FORMAT(time,'%Y-%m')= DATE_FORMAT(CURDATE(),'%Y-%m')) ;
+    </select>
+    <select id="selectNoMouthNum" resultType="Integer">
+        select  count(*) from goodsorder where paymentStatus=0 AND (DATE_FORMAT(time,'%Y-%m')= DATE_FORMAT(CURDATE(),'%Y-%m')) ;
+    </select>
+    <select id="selectNoNum" resultType="Integer">
+        select  count(*) from goodsorder where paymentStatus=0 AND (time BETWEEN CONCAT(CURDATE(),' 00:00:00') AND CONCAT(CURDATE(),' 23:59:59')) ;
+    </select>
+    <select id="selectEcharts" resultType="com.example.demo.entity.vo.BarEcharts">
+        select  typeName,sum(price)as total from goodsorder where time BETWEEN CONCAT(CURDATE(),' 00:00:00') AND CONCAT(CURDATE(),' 23:59:59') group by  typeName order by sum(price) DESC limit 5;;
+    </select>
+    <select id="selectEchartsTwo" resultType="com.example.demo.entity.vo.BarEcharts">
+        SELECT DATE_FORMAT(time,'%m') AS month, typeName,sum(price)as total FROM goodsorder WHERE time BETWEEN DATE_SUB(NOW(), INTERVAL 3 MONTH) AND NOW() GROUP BY month,typeName ORDER BY month DESC;
+    </select>
+</mapper>
